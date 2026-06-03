@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     model_mode: Literal["mock", "real"] = "mock"
     model_path: str = "/models/adapter"
     base_model_name: str = "Qwen/Qwen3-4B"
+    # cpu  — no GPU, loads in float32, no device_map (avoids PEFT offload bug)
+    # cuda — GPU available, loads in float16 with device_map=auto
+    device: Literal["cpu", "cuda"] = "cpu"
 
     # Generation — temperature sourced from Colab notebook test cell
     max_new_tokens: int = 512

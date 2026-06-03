@@ -50,17 +50,33 @@ class QwenBackend:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        logger.info("Loading base model: %s", settings.base_model_name)
-        base = AutoModelForCausalLM.from_pretrained(
-            settings.base_model_name,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-            device_map="auto",
-            trust_remote_code=True,
-        )
+        try:
+            logger.info("Loading base model: %s [device=%s]", settings.base_model_name, settings.device)
+            if settings.device == "cuda":
+                base = AutoModelForCausalLM.from_pretrained(
+                    settings.base_model_name,
+                    torch_dtype=torch.float16,
+                    device_map="auto",
+                    trust_remote_code=True,
+                )
+            else:
+                # CPU: do NOT use device_map — it triggers PEFT's disk-offload
+                # path which corrupts module names and raises KeyError on adapter load
+                base = AutoModelForCausalLM.from_pretrained(
+                    settings.base_model_name,
+                    torch_dtype=torch.float32,
+                    trust_remote_code=True,
+                )
 
-        logger.info("Loading LoRA adapter from %s", settings.model_path)
-        self.model = PeftModel.from_pretrained(base, settings.model_path)
-        self.model.eval()
+            logger.info("Loading LoRA adapter from %s", settings.model_path)
+            self.model = PeftModel.from_pretrained(base, settings.model_path)
+            self.model.eval()
+        except Exception:
+            logger.exception(
+                "Failed to load model. base_model=%s adapter=%s device=%s",
+                settings.base_model_name, settings.model_path, settings.device,
+            )
+            raise
 
         self.device = next(self.model.parameters()).device
         self.settings = settings
