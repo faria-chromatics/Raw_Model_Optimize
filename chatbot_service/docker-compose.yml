@@ -1,0 +1,27 @@
+services:
+  chatbot:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_MODE: mock
+      LOG_LEVEL: DEBUG
+      LOG_FORMAT: text
+      ENV: dev
+    volumes:
+      # Hot reload — code changes take effect without rebuilding the image
+      - ./app:/app/app
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
