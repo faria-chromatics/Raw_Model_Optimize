@@ -1,0 +1,33 @@
+# Production overrides. Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Before running: place adapter files at /data/models/qwen3-4b-lora/adapter on the host.
+# The container always reads from /models/adapter (read-only mount).
+
+services:
+  chatbot:
+    environment:
+      MODEL_MODE: real
+      MODEL_PATH: /models/adapter
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      ENV: prod
+    volumes:
+      # Adapter mounted read-only — update model files without rebuilding the image
+      - /data/models/qwen3-4b-lora/adapter:/models/adapter:ro
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --workers
+      - "1"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

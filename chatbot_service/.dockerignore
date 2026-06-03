@@ -1,0 +1,9 @@
+.git
+.env
+tests/
+*.ipynb
+*.jsonl
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
